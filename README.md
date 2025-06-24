@@ -55,10 +55,12 @@ echo "JWT_SECRET=yourSecretKey" > .env
 # Configure MySQL DB in Sequelize config
 node index.js
 ```
-Frontend
+### Frontend
+```bash
 cd client
 npm install
 npm start
+```
 
 🌍 Deployment
 🔧 Backend: Render
