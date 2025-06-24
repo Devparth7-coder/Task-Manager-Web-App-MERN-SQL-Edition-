@@ -95,10 +95,13 @@ const Signup = () => {
     </div>
   );
 };
-
 const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [editedTitle, setEditedTitle] = useState("");
+
   const { token, logout } = React.useContext(AuthContext);
 
   const fetchTasks = async () => {
@@ -120,7 +123,8 @@ const Dashboard = () => {
   };
 
   const updateStatus = async (id, status) => {
-    const nextStatus = status === "To Do" ? "In Progress" : status === "In Progress" ? "Done" : "Done";
+    const nextStatus =
+      status === "To Do" ? "In Progress" : status === "In Progress" ? "Done" : "Done";
     await axios.put(
       `http://localhost:5000/api/tasks/${id}`,
       { status: nextStatus },
@@ -129,37 +133,108 @@ const Dashboard = () => {
     fetchTasks();
   };
 
+  const deleteTask = async (id) => {
+    await axios.delete(`http://localhost:5000/api/tasks/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    fetchTasks();
+  };
+
+  const saveTitleEdit = async (id) => {
+    await axios.put(
+      `http://localhost:5000/api/tasks/${id}`,
+      { title: editedTitle },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setEditingTaskId(null);
+    setEditedTitle("");
+    fetchTasks();
+  };
+
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  const filteredTasks = tasks.filter((task) =>
+    task.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold mb-4">Task Dashboard</h1>
-        <button className="bg-red-500 text-white px-3 py-1" onClick={logout}>Logout</button>
+        <button className="bg-red-500 text-white px-3 py-1" onClick={logout}>
+          Logout
+        </button>
       </div>
+
       <div className="flex gap-2 mb-4">
-        <input className="flex-1 border p-2" placeholder="Task title..." value={title} onChange={(e) => setTitle(e.target.value)} />
-        <button className="bg-blue-500 text-white px-4" onClick={createTask}>Add Task</button>
+        <input
+          className="flex-1 border p-2"
+          placeholder="Task title..."
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <button className="bg-blue-500 text-white px-4" onClick={createTask}>
+          Add Task
+        </button>
       </div>
+
+      <input
+        type="text"
+        placeholder="Search tasks..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="border px-3 py-2 rounded w-full mb-4"
+      />
+
       <div className="grid grid-cols-3 gap-4">
-        {['To Do', 'In Progress', 'Done'].map((status) => (
+        {["To Do", "In Progress", "Done"].map((status) => (
           <div key={status}>
             <h2 className="text-xl font-semibold mb-2">{status}</h2>
-            {tasks
+            {filteredTasks
               .filter((task) => task.status === status)
               .map((task) => (
-                <div key={task.id} className="bg-gray-100 p-2 mb-2 rounded shadow">
-                  <p>{task.title}</p>
-                  {status !== 'Done' && (
-                    <button
-                      className="text-blue-500 text-sm mt-1"
-                      onClick={() => updateStatus(task.id, task.status)}
+                <div
+                  key={task.id}
+                  className="bg-gray-100 p-2 mb-2 rounded shadow flex flex-col gap-1"
+                >
+                  {editingTaskId === task.id ? (
+                    <input
+                      value={editedTitle}
+                      onChange={(e) => setEditedTitle(e.target.value)}
+                      onBlur={() => saveTitleEdit(task.id)}
+                      autoFocus
+                      className="border rounded px-2 py-1"
+                    />
+                  ) : (
+                    <h3
+                      onClick={() => {
+                        setEditingTaskId(task.id);
+                        setEditedTitle(task.title);
+                      }}
+                      className="cursor-pointer font-medium"
                     >
-                      Mark as {status === 'To Do' ? 'In Progress' : 'Done'}
-                    </button>
+                      {task.title}
+                    </h3>
                   )}
+
+                  <div className="flex justify-between">
+                    {status !== "Done" && (
+                      <button
+                        className="text-blue-500 text-sm"
+                        onClick={() => updateStatus(task.id, task.status)}
+                      >
+                        Mark as {status === "To Do" ? "In Progress" : "Done"}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => deleteTask(task.id)}
+                      className="text-red-600 text-sm"
+                    >
+                      🗑 Delete
+                    </button>
+                  </div>
                 </div>
               ))}
           </div>
@@ -168,5 +243,11 @@ const Dashboard = () => {
     </div>
   );
 };
+    
+     
+
+  
+             
+    
 
 export default App;
